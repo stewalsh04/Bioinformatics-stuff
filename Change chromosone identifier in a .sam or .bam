@@ -1,0 +1,13 @@
+To change parts of a SAM file for example chr1 to 1, you need to use 'sed' in the linux terminal.
+
+For example to change chromosomes 1-22, X Y and MT you would use:
+
+For a .bam (You need samools to work with a .bam)
+samtools view -H test.bam | sed -e 's/SN:\([0-9XY]\)/SN:chr\1/' -e 's/SN:MT/SN:chrM/' | samtools reheader - test.bam > test_chr.bam
+
+For a .sam
+cat test.sam | sed -e 's/SN:\([0-9XY]\)/SN:chr\1/' -e 's/SN:MT/SN:chrM/' > test_chr.sam
+
+I was working with a bacterial genome, and I mis-labelled the equivilant of the chromosome identifier, so I did:
+
+cat CSG_sorted.sam | sed -e 's/CP002170.1/NC_014448/' > CSG_sorted.sam
