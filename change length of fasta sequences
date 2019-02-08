@@ -1,0 +1,3 @@
+###########To change the size of fasta sequences, use awk in linux terminal##########
+
+cat foo.fasta | awk -v 'RS=>' 'NR>1{print ">" $1; printf("%.45s\n", $2)}'      ##Change the '45' to a different length###
