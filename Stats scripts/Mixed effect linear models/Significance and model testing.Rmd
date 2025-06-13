@@ -1,0 +1,139 @@
+---
+title: "Significance and model comparison"
+output: html_document
+date: "2024-07-15"
+---
+
+
+
+```{r}
+library(lmerTest)
+library(pbkrtest)
+```
+
+##This page gives methods to test if adding fixed or random effects to a model improve the
+##model, i.e. by adding it we get a significant p-value.
+
+#First test using Likelihood ratio tests (LRTs)
+#Make a linear mixed effect for the sleep study with days and subjects as radnom effects
+```{r}
+data("sleepstudy")
+
+lme_sleep <- lmer(Reaction ~ Days + (1 + Days|Subject),
+                   data = sleepstudy)
+
+lm_null <- lm(Reaction ~ 1, data = sleepstudy)
+```
+
+#Then use ANOVA function to compare the two
+#Chi-squeared distributution can be used to get a p-value from difference in deviance
+```{r}
+anova(lme_sleep, lm_null)
+```
+
+#Now we want to know about individual predictors (Rather than the whole model)
+#First for fixed effects
+
+#First get a random-effect only model (Replace days with 1)
+```{r}
+lme_sleep_random <- lmer(Reaction ~ 1 + (1 + Days|Subject),
+                   data = sleepstudy)
+```
+
+#Then again use ANOVA to compare to linear mixed effect model above (With the fixed effect Days)
+```{r}
+anova(lme_sleep, lme_sleep_random)
+```
+#Now test using degrees of freedom
+```{r}
+library(lmerTest)
+
+lme_sleep <- lmer(Reaction ~ Days + (1 + Days|Subject),
+                   data = sleepstudy)
+```
+
+```{r}
+anova(lme_sleep)
+```
+
+#Carry out bootstrapping test against the linear mixed model above
+#Warnings are ok
+```{r}
+pbkrtest::PBmodcomp(lme_sleep, lme_sleep_random, seed = 20)
+```
+#Use the Z-score to calculate a P-value (Need large sample size)
+```{r}
+2*pnorm(q = 6.771, lower.tail = FALSE)
+```
+
+#Now test if making the effects random helps the model, this is more philosophical, is it necessary?
+
+#First use Likelihood ratio tests (LRTs)
+```{r}
+lme_sleep_intercepts <- lmer(Reaction ~ Days + (1|Subject),
+                   data = sleepstudy)
+
+anova(lme_sleep, lme_sleep_intercepts)
+```
+#As above compare using ANOVA to null model
+```{r}
+lm_sleep <- lm(Reaction ~ Days, data = sleepstudy)
+
+anova(lme_sleep, lm_sleep)
+```
+
+#You can also compare the AIC/BIC values above
+
+#Finally try bootstrapping to get a P-value
+```{r}
+pbkrtest::PBmodcomp(lme_sleep, lme_sleep_intercepts, seed = 20)
+```
+
+#Execise, Dragons data
+
+```{r}
+dragons <- read_csv("/home/participant/Documents/dragons.csv")
+
+lme_dragons <- lmer(intelligence ~ wingspan*scales + (1 + wingspan|mountain), 
+                    data = dragons)
+```
+
+```{r}
+lm_dragons <- lm(intelligence ~ 1, data = dragons)
+anova(lme_dragons,lm_dragons)
+```
+
+```{r}
+lme_dragons_fixed <- lmer(intelligence ~ wingspan + scales + (1 + wingspan|mountain), 
+                    data = dragons)
+```
+
+```{r}
+anova(lme_dragons,lme_dragons_fixed)
+```
+
+#Now take out individual effects, first drop scales
+```{r}
+lme_dragons_dropscale <- lmer(intelligence ~ wingspan + (1 + wingspan|mountain), 
+                              data = dragons)
+```
+
+```{r}
+anova(lme_dragons_fixed, lme_dragons_dropscale)
+```
+
+#Then drop wings
+```{r}
+lme_dragons_dropwing <- lmer(intelligence ~ scales + (1 + wingspan|mountain), 
+                            data = dragons)
+```
+
+```{r}
+anova(lme_dragons_fixed, lme_dragons_dropwing)
+```
+
+```{r}
+anova(lme_dragons)
+summary(lme_dragons)
+```
+

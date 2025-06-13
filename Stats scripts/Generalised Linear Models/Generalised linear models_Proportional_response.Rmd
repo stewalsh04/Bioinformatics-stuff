@@ -1,0 +1,73 @@
+---
+title: "Generalised_Linear_models_Proportional_Response"
+output: html_document
+date: "2024-06-14"
+---
+
+```{r}
+library(broom)
+library(tidyverse)
+library(ggResidpanel)
+```
+
+```{r}
+challenger <- read_csv("/home/participant/R/data/challenger.csv")
+```
+
+#Load in the challenger data about O-ring and temperature
+```{r}
+challenger <-
+challenger %>%
+  mutate(total = 6,                     # total number of o-rings
+         intact = 6 - damage,           # number of undamaged o-rings
+         prop_damaged = damage / total) # proportion damaged o-rings
+
+challenger
+```
+
+#Plot the data
+```{r}
+ggplot(challenger, aes(x = temp, y = prop_damaged)) +
+  geom_point()
+```
+#Make a GLM from the data
+```{r}
+glm_chl <- glm(cbind(damage, intact) ~ temp,
+               family = binomial,
+               data = challenger)
+```
+
+#Check the model
+```{r}
+summary(glm_chl)
+```
+
+```{r}
+ggplot(challenger, aes(temp, prop_damaged)) +
+  geom_point() +
+  geom_smooth(method = "glm", se = FALSE, fullrange = TRUE, 
+              method.args = list(family = binomial)) +
+  xlim(25,85)
+```
+#Does the model still predict without the oulier?
+#Remove the outlier
+```{r}
+challenger_new <- challenger %>% filter(temp != 53)
+```
+
+#Re-model the data
+```{r}
+glm_chl_new <- glm(cbind(damage, intact) ~ temp,
+               family = binomial,
+               data = challenger_new)
+```
+
+```{r}
+pchisq(12.633, 20, lower.tail = FALSE)
+```
+
+
+```{r}
+anova(glm_chl_new, test = "Chisq")
+```
+

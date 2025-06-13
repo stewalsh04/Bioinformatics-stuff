@@ -1,0 +1,199 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+plot(cars)
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+
+```{r}
+cortisol <- read_csv("data/CS1-twopaired.csv")
+cortisol
+```
+
+```{r}
+# create a boxplot
+ggplot(cortisol,
+       aes(x = time, y = cortisol)) +
+  geom_boxplot() +
+  geom_jitter(width = 0.05) +
+  ylab("Cortisol level (nmol/l)")
+```
+
+```{r}
+cortisol_diff <- cortisol %>%
+  pivot_wider(id_cols = patient_id,
+              names_from = time,
+              values_from = cortisol) %>% 
+  mutate(cortisol_change = evening - morning)
+
+cortisol_diff
+```
+
+```{r}
+
+ggplot(cortisol_diff,
+       aes(y = cortisol_change)) +
+  geom_boxplot() +
+  ylab("Change in cortisol (nmol/l)")
+```
+
+```{r}
+# plot cortisol levels by patient
+ggplot(cortisol,
+       aes(x = time,
+           y = cortisol,
+           group = patient_id)) +
+  geom_point() +
+  geom_line()
+```
+
+```{r}
+# perform the test
+t.test(cortisol_diff$morning, cortisol_diff$evening,
+       alternative = "two.sided",
+       paired = TRUE)
+```
+
+```{r}
+wilcox.test(cortisol_diff$morning, cortisol_diff$evening,
+            alternative = "two.sided",
+            paired = TRUE)
+```
+
+#Check assumptions for indiviual groups (Not too bothered about this)
+
+```{r}
+cortisol %>% 
+  select(-patient_id) %>%
+  group_by(time) %>% 
+  get_summary_stats(type = "common")
+```
+
+```{r}
+ggplot(cortisol,
+  aes(x = time, y = cortisol)) +
+  geom_boxplot()
+```
+
+```{r}
+# Shapiro-Wilk test on each site
+cortisol %>% 
+    filter(time == "evening") %>% 
+    pull(cortisol) %>% 
+    shapiro.test()
+```
+
+```{r}
+cortisol %>% 
+ggplot (aes(sample = cortisol)) +
+  stat_qq() +
+  stat_qq_line(colour = "blue")
+```
+
+#Check assumptions across the differences between groups
+
+```{r}
+# perform Shapiro-Wilk test on cortisol differences (wide dataframe)
+shapiro.test(cortisol_diff$cortisol_change)
+```
+
+```{r}
+# create the Q-Q plot
+ggplot(cortisol_diff,
+       aes(sample = cortisol_change)) +
+  stat_qq() +
+  stat_qq_line(colour = "blue")
+```
+
+```{r}
+deer <- read_csv("~/Course_Materials/data/CS1-deer.csv")
+```
+
+##Lets look at deer leg length##
+```{r}
+deer %>% 
+  select(-id) %>%
+  group_by(leg) %>% 
+  get_summary_stats(type = "common")
+```
+
+```{r}
+ggplot(deer,
+aes(x = leg, y = length)) +
+  geom_boxplot()
+```
+#Hindeleg bigger?
+
+#Lets check normality....
+```{r}
+# create the Q-Q plot
+ggplot(deer,
+       aes(sample = length)) +
+  stat_qq() +
+  stat_qq_line(colour = "blue")
+```
+
+```{r}
+# Shapiro-Wilk test on each site
+deer %>% 
+    filter(leg == "foreleg") %>% 
+    pull(length) %>% 
+    shapiro.test()
+```
+
+#All ok so far....
+
+#But we are testing differences, so lets get a column of difference in leg length
+
+```{r}
+# create a data set that contains the difference in leg length
+leg_diff <- deer %>% 
+  pivot_wider(id_cols = id,
+              names_from = leg,
+              values_from = length) %>% 
+  mutate(leg_diff = hindleg - foreleg)
+```
+
+```{r}
+# plot the difference in leg length
+ggplot(leg_diff,
+       aes(y = leg_diff)) +
+  geom_boxplot()
+```
+#Looks a bit skewed
+
+#Let's re check assumptions
+```{r}
+# Shapiro-Wilk test to see if it's normal for leg length difference
+shapiro.test(leg_diff$leg_diff)
+```
+#Oh NO!
+
+```{r}
+# create a Q-Q plot again to test normality
+ggplot(leg_diff,
+       aes(sample = leg_diff)) +
+  stat_qq() +
+  stat_qq_line(colour = "blue")
+```
+#Definitely not normal!
+
+```{r}
+# create a Q-Q plot again to test normality
+ggplot(leg_diff,
+       aes(x = leg_diff)) +
+geom_histogram(bins=8)
+```
+#Data is not symetrical so can't use for a Wilcoxon signed rank!

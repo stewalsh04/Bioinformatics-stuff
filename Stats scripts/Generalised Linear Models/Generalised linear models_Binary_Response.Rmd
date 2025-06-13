@@ -1,0 +1,135 @@
+---
+title: "Generalised_Linear_Models"
+output: html_document
+date: "2024-06-14"
+---
+
+```{r setup, include=FALSE}
+library(broom)
+library(tidyverse)
+library(ggResidpanel)
+```
+
+#Load in data, check pointed beak, this is categorical either it is or isn't
+#This is represented by 0 or 1.
+```{r}
+early_finches <- read_csv("/home/participant/R/data/finches_early.csv")
+head(early_finches$pointed_beak)
+```
+
+#Box plot of pointed beak data
+```{r}
+ggplot(early_finches,
+       aes(x = factor(pointed_beak),
+          y = blength)) +
+  geom_boxplot()
+```
+
+
+#Line of best fit does not work in this case, we have values less or more than 1
+```{r}
+ggplot(early_finches,
+       aes(x = blength, y = pointed_beak)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE)
+```
+
+#Test of assumptions is terrible as it is a categorical response
+```{r}
+lm_bks <- lm(pointed_beak ~ blength,
+             data = early_finches)
+
+resid_panel(lm_bks,
+            plots = c("resid", "qq", "ls", "cookd"),
+            smoother = TRUE)
+```
+#Insteasd we fit a generalised linear function, this uses a logistic link function that will esnure the reponse variable is between 0 and 1
+#Not we have to specify the family of the error distribution to use, here it is binomial
+```{r}
+glm_bks <- glm(pointed_beak ~ blength,
+               family = binomial,
+               data = early_finches)
+```
+
+```{r}
+glm_bks %>% 
+  augment(type.predict = "response") %>% 
+  ggplot() +
+  geom_point(aes(x = blength, y = pointed_beak)) +
+  geom_line(aes(x = blength, y = .fitted),
+            linetype = "dashed",
+            colour = "blue") +
+  geom_point(aes(x = blength, y = .fitted),
+             colour = "blue", alpha = 0.5) +
+  labs(x = "beak length (mm)",
+       y = "Probability")
+```
+
+```{r}
+resid_panel(glm_bks, plots = "cookd")
+```
+
+#Check how well our model predicts our data
+#This uses the pchisq function and takes the residual deviance and degrees of freedom from the ouput of the GLM object.
+```{r}
+pchisq(9.1879, 59, lower.tail = FALSE)
+```
+
+```{r}
+anova(glm_bks, test = "Chisq")
+```
+
+#Use the ANOVA function to see if our predictors are significant, this is shown in the Pr(>Chi) column
+```{r}
+anova(glm_bks, test = "Chisq")
+```
+
+#Diabetes data
+```{r}
+diabetes <-read_csv("/home/participant/R/data/diabetes.csv")
+```
+
+```{r}
+ggplot(diabetes,
+       aes(x = factor(test_result),
+           y = glucose)) +
+  geom_boxplot()
+```
+
+
+#Box plot of pointed beak data
+```{r}
+ggplot(diabetes,
+       aes(x = glucose, y = test_result)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE)
+```
+
+```{r}
+glm_diabetes <- glm(test_result ~ glucose,
+               family = binomial,
+               data = diabetes)
+```
+
+```{r}
+anova(glm_diabetes, test = "Chisq")
+```
+
+```{r}
+glm_diabetes %>% 
+  augment(type.predict = "response") %>% 
+  ggplot() +
+  geom_point(aes(x = glucose, y = test_result)) +
+  geom_line(aes(x = glucose, y = .fitted),
+            linetype = "dashed",
+            colour = "blue") +
+  geom_point(aes(x = glucose, y = .fitted),
+             colour = "blue", alpha = 0.5) +
+  labs(x = "Glucose (mM)",
+       y = "Probability")
+```
+
+```{r}
+exp(-5.61173 + 0.03951  * 150) / (1 + exp(-5.61173 + 0.03951  * 150))
+```
+

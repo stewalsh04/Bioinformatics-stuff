@@ -1,0 +1,318 @@
+#!/bin/bash
+
+######################################################################################
+# NGS pipeline intiator script for automated NGS pipeline running
+# This script will take input from /mnt/c/ngs_fastq/input
+# All fastq files in the correct format in this folder will be sorted
+# synthetic DNA is processed from config.xlsx int he same folder as the fastq files
+# Log files are output to /mnt/c/ngs_fastq/logs
+######################################################################################
+
+###################################################################################### 
+# Clear all variables, the script is run with source so if the same terminal is used
+# variables may be set from a previous run
+
+# usage:
+# source autopipeline.bash --folder input
+# where input is the name of the subdirectory within ngs_fastq containing the relevant
+# config and fastqs
+###################################################################################### 
+
+unset LINE
+unset THRESH
+
+DIRNAME=$PWD
+
+options=$(getopt -o '' -l threads: -l path: -l id: -l threshold: -l holdinput -l error: -l debug -l phix -- "$@") || exit_with_bad_args
+
+#Default arguments
+THRESH="AUTO"
+QUAL=0.03
+DEBUG="false"
+THREADS=1
+HOMEPATH="/mnt/c"
+MULTIRUNID="PipelineRun-$(date '+%Y-%m-%d-%R')"
+HOLDINPUT="false"
+PHIX="false"
+
+#handling the commandline options
+
+eval set -- "$options"
+while true; do
+    case "$1" in
+        --threads)
+            shift
+            THREADS="$1"
+            ;;
+        --path)
+            shift
+            HOMEPATH="$1"
+            ;;
+        --id)
+            shift
+            MULTIRUNID="$1"
+            ;;
+        --threshold)
+            shift
+            THRESH="$1"
+            ;;
+        --holdinput)
+           HOLDINPUT="true"
+           echo "Holding input fastq files in inputs folder"
+           ;;
+        --error)
+            shift
+            QUAL="$1"
+            ;;
+        --debug)
+            DEBUG="true"
+        echo "Debugging enabled"
+            ;;
+        --phix)
+            PHIX='true'
+        echo "PhiX scanned enabled"
+            ;;
+         --)
+            shift
+            break
+            ;;
+    esac
+    shift
+done
+
+DIRNAME=$PWD
+RUNFOLDER="$HOMEPATH/ngs_pipeline/inputs/"
+CONFIGFILE="$RUNFOLDER/config.xlsx" # Get reference file
+MODE="multi"
+LOGFOLDER="$HOMEPATH/ngs_pipeline/inputs/logs"
+REPOSITORY="$HOMEPATH/ngs_pipeline/references"
+echo "Sample ID,Reference,Status,Info" > $LOGFOLDER/$MULTIRUNID.csv
+echo $THRESH
+
+######################################################################################
+# process configuration file into ref.txt (for running the pipeline)
+######################################################################################
+
+conda activate NGS-Pipeline
+
+if [ ! -f $CONFIGFILE ]; then
+    echo "Could not find the configuration file confit.xlxs"
+    echo "Exiting now"
+    sleep 5
+    exit 127
+fi
+    
+
+echo "*******************************************"
+echo "Checking config file for references, invalid synDNA will not be run"
+echo "*******************************************"
+sleep 2
+python automation_utils.py --config $CONFIGFILE --repo $REPOSITORY --fastqs $RUNFOLDER
+REFERENCEFILE="$RUNFOLDER/ref.txt"
+
+if [ $HOLDINPUT == "false"  ] && [ $PHIX == "false" ]; then
+    mv $CONFIGFILE $LOGFOLDER/configfiles/$MULTIRUNID.config.xlsx
+fi
+
+
+
+######################################################################################
+# Extract and check the reference file
+# Any empty lines will be removed and also end of line charcters /r and /n
+######################################################################################
+
+sed -i '/^[[:space:]]*$/d' $REFERENCEFILE # Remove any empty lines from ref file
+
+######################################################################################
+#**************PhiX Check***************
+#This carries out the PhiX check if the PhiX flag is used, this aligns the undetermined reads against the PhiX genome, a small amount of PhiX is spiked into each
+#sequencing run as a QC check for the sequencing process. The correct undetermined reads files must be present in the inputs folder along with the sequencing files
+#from THE SAME sequencing run. Undetermined reads CANNOT be mixed between sequening runs. 
+#The PhiX check is carried out prior to processing the remaining sequeincing samples and is handled independent of the config input file, it is therefore outside
+#the while loop.
+######################################################################################
+
+#Handle the directories for PhiX
+if [[ $PHIX == "true" ]]; then 
+    echo "Running PhiX error check"
+    sleep 2
+    if [ -d /$HOMEPATH/ngs_pipeline/outputs/$MULTIRUNID/Undetermined ]; then
+        echo "PhiX check may have already been carried out for this sequencing run"
+        echo "The previous PhiX check will be overwritten"
+	sleep 2
+	#Remove previous undetermined files to re-set analysis
+	if  [ -d $HOMEPATH/ngs_pipeline/outputs/$MULTIRUNID/Undetermined/fastq ]; then
+		rm $HOMEPATH/ngs_pipeline/outputs/$MULTIRUNID/Undetermined/fastq/*
+	fi
+        if [ ! -d $HOMEPATH/ngs_pipeline/outputs/$MULTIRUNID/Undetermined/fastq ]; then
+            mkdir $HOMEPATH/ngs_pipeline/outputs/$MULTIRUNID/Undetermined/fastq
+        fi
+    elif [ -d /$HOMEPATH/ngs_pipeline/outputs/$MULTIRUNID ]; then
+        mkdir $HOMEPATH/ngs_pipeline/outputs/$MULTIRUNID/Undetermined
+        mkdir $HOMEPATH/ngs_pipeline/outputs/$MULTIRUNID/Undetermined/fastq
+    else
+        mkdir $HOMEPATH/ngs_pipeline/outputs/$MULTIRUNID
+        mkdir $HOMEPATH/ngs_pipeline/outputs/$MULTIRUNID/Undetermined
+        mkdir $HOMEPATH/ngs_pipeline/outputs/$MULTIRUNID/Undetermined/fastq
+    fi
+
+    #Handle the PhiX files
+    if [[ $HOLDINPT == "false" ]]; then
+        mv ${RUNFOLDER}/Undetermined_S0_L001_R1_001.fastq.gz $HOMEPATH/ngs_pipeline/outputs/$MULTIRUNID/Undetermined/fastq
+        mv ${RUNFOLDER}/Undetermined_S0_L001_R2_001.fastq.gz $HOMEPATH/ngs_pipeline/outputs/$MULTIRUNID/Undetermined/fastq
+    elif [[ $HOLDINPUT == "true" ]]; then
+        cp ${RUNFOLDER}/Undetermined_S0_L001_R1_001.fastq.gz $HOMEPATH/ngs_pipeline/outputs/$MULTIRUNID/Undetermined/fastq
+        cp ${RUNFOLDER}/Undetermined_S0_L001_R2_001.fastq.gz $HOMEPATH/ngs_pipeline/outputs/$MULTIRUNID/Undetermined/fastq
+    fi
+
+    . ./ngs_pipeline.bash --fastq Undetermined --ref phix
+fi
+
+COUNTER=0
+QCCOUNTER=0
+while IFS= read -r LINE
+do
+    # split line into array using tab delimitator - 0: sample 1: reference fasta 2: synDNA
+    ARRAYLINE=(${LINE// / })
+    SAMPLE=${ARRAYLINE[0]}
+    REFFASTA=${ARRAYLINE[1]}
+    SYNDNA=${ARRAYLINE[2]}
+
+    # ######################################################################################
+    # # Set up the required folders based on the sample names above
+    # # Move the files to where they need to be for the main NGS pipeline
+    # # If the sample has been previously analyzed the user is told and the pipeline continues in 
+    # # the same folder
+    # ######################################################################################
+
+    if [ -d /$HOMEPATH/ngs_pipeline/outputs/$MULTIRUNID/EVX-${SAMPLE} ]; then
+        echo "Adding to folder of previous analysis for $SAMPLE, maybe check if it's the same pair of fastq files"
+        if [ ! -d $HOMEPATH/ngs_pipeline/outputs/$MULTIRUNID/EVX-${SAMPLE}/fastq ]; then
+            mkdir $HOMEPATH/ngs_pipeline/outputs/$MULTIRUNID/EVX-${SAMPLE}/fastq
+        fi
+    elif [ -d /$HOMEPATH/ngs_pipeline/outputs/$MULTIRUNID ]; then
+        mkdir $HOMEPATH/ngs_pipeline/outputs/$MULTIRUNID/EVX-${SAMPLE}
+        mkdir $HOMEPATH/ngs_pipeline/outputs/$MULTIRUNID/EVX-${SAMPLE}/fastq
+        #sleep 5
+    else
+        mkdir $HOMEPATH/ngs_pipeline/outputs/$MULTIRUNID
+        mkdir $HOMEPATH/ngs_pipeline/outputs/$MULTIRUNID/EVX-${SAMPLE}
+        mkdir $HOMEPATH/ngs_pipeline/outputs/$MULTIRUNID/EVX-${SAMPLE}/fastq
+    fi
+
+    # move the fastqs over to working output directory unless holdinput flag is true or the files are already there
+    if [ $HOLDINPUT == "false" ] && [ ! -f $HOMEPATH/ngs_pipeline/outputs/$MULTIRUNID/EVX-${SAMPLE}/fastq/${SAMPLE}_L001_R1_001.fastq.gz ]; then
+	mv ${RUNFOLDER}/${SAMPLE}_* $HOMEPATH/ngs_pipeline/outputs/$MULTIRUNID/EVX-${SAMPLE}/fastq
+    elif [ $HOLDINPUT == "false" ] && [ ! -f $HOMEPATH/ngs_pipeline/outputs/$MULTIRUNID/EVX-${SAMPLE}/fastq/${SAMPLE}_L001_R2_001.fastq.gz ]; then
+        mv ${RUNFOLDER}/${SAMPLE}_* $HOMEPATH/ngs_pipeline/outputs/$MULTIRUNID/EVX-${SAMPLE}/fastq
+    elif [ $HOLDINPUT == "true"  ] && [ ! -f $HOMEPATH/ngs_pipeline/outputs/$MULTIRUNID/EVX-${SAMPLE}/fastq/${SAMPLE}_L001_R1_001.fastq.gz ]; then
+        cp ${RUNFOLDER}/${SAMPLE}_* $HOMEPATH/ngs_pipeline/outputs/$MULTIRUNID/EVX-${SAMPLE}/fastq
+    elif [ $HOLDINPUT == "true"  ] && [ ! -f $HOMEPATH/ngs_pipeline/outputs/$MULTIRUNID/EVX-${SAMPLE}/fastq/${SAMPLE}_L001_R1_001.fastq.gz ]; then
+        cp ${RUNFOLDER}/${SAMPLE}_* $HOMEPATH/ngs_pipeline/outputs/$MULTIRUNID/EVX-${SAMPLE}/fastq
+    fi
+
+    ######################################################################################
+    # Carry out the QC for one pair of fastq files that contian the pool of different DNA sequences
+    ######################################################################################
+
+    if [[ $QCCOUNTER < 1 ]]; then
+        QC_DIR="$HOMEPATH/ngs_pipeline/outputs/$MULTIRUNID/QC"
+
+        # make QC directory
+
+        function create_folder {
+            mkdir -p "$1"
+            chmod 700 "$1"
+        }
+
+        create_folder "$QC_DIR"
+
+        fastqc $HOMEPATH/ngs_pipeline/outputs/$MULTIRUNID/EVX-${SAMPLE}/fastq/*.fastq.gz --outdir $QC_DIR
+
+        fastp --thread 16 --trim_poly_x --in1 $HOMEPATH/ngs_pipeline/outputs/$MULTIRUNID/EVX-${SAMPLE}/fastq/*R1*.fastq.gz \
+        --in2 $HOMEPATH/ngs_pipeline/outputs/$MULTIRUNID/EVX-${SAMPLE}/fastq/*R2*.fastq.gz --out1 $QC_DIR/R1.fsp.fq.gz \
+        --out2 $QC_DIR/R2.fsp.fq.gz --json $QC_DIR/${EVX_RUNID}_fastp.json \
+        --html $QC_DIR/${EVX_RUNID}fsp_data.html \
+        --report_title ${EVX_RUNID}_data_fsp 1 > $QC_DIR/${EVX_RUNID}_fsp.log
+
+        ######################################################################################
+        # Carry out the unaligned analysis on just the one pair of fastq files
+        ######################################################################################
+        
+        UNALIGNED_DIR="$HOMEPATH/ngs_pipeline/outputs/$MULTIRUNID/Unaligned_Analysis"
+
+        create_folder "$UNALIGNED_DIR"
+
+        mv $HOMEPATH/ngs_pipeline/outputs/$MULTIRUNID/EVX-${SAMPLE}/fastq/*_top15_reads.fasta $UNALIGNED_DIR
+
+        python unaligned_reads.py eline/outputs/$MULTIRUNID/EVX-${SAMPLE}/fastq $SYNDNA EVX-${SAMPLE}
+
+        echo "*******************************************"
+        echo "Carrying out multiple alignment with Muscle for unaligned reads"
+        echo "*******************************************"
+        #Multiple aligner Muscle https://www.drive5.com/muscle/
+        muscle -in $UNALIGNED_DIR/*_top15_reads.fasta -out $UNALIGNED_DIR/EVX-${SAMPLE}_top15_reads.aligned.fasta.tmp
+
+        #Re-order the aligment so the most abundant variants are at the top (Using amended python script from Muscle author)
+        python stable.py $UNALIGNED_DIR/*_top15_reads.fasta $UNALIGNED_DIR/EVX-${SAMPLE}_top15_reads.aligned.fasta.tmp > $UNALIGNED_DIR/EVX-${SAMPLE}_top15_reads.aligned.fasta
+
+        #Remove tempory alignment files
+        rm EVX-${SAMPLE}_top15_reads.aligned.fasta.tmp
+
+        #Make the multiple alignment plots using pymsaviz (https://pypi.org/project/pymsaviz/)
+        python unaligned_reads_plot.py $UNALIGNED_DIR/EVX-${SAMPLE}_top15_reads.aligned.fasta EVX-${SAMPLE} $UNALIGNED_DIR
+
+        QCCOUNTER = $(( QCCOUNTER + 1 ))
+    
+    fi
+
+    # ######################################################################################
+    # # Initiate the pipeline
+    # ######################################################################################
+
+    function kill_children {
+        echo "Forwarding SIGINT to children..."
+        jobs -p | xargs kill
+        exit 1
+    }
+
+    # ensure that children processes are killed if we receive a SIGINT
+    #trap kill_children SIGINT
+
+        if [[ $DEBUG == "true" ]]; then
+            . ./ngs_pipeline.bash --fastq EVX-$SAMPLE --ref $REFFASTA --seq $SYNDNA --thresh $THRESH --error $QUAL --debug &
+        else
+            . ./ngs_pipeline.bash --fastq EVX-$SAMPLE --ref $REFFASTA --seq $SYNDNA --thresh $THRESH --error $QUAL &
+        fi
+
+    #Maximum number of threads reached, so wait for them to finish then re-set the counter to 0, then it will re-start
+    COUNTER=$(( COUNTER + 1 ))
+    echo $COUNTER
+    if [ "$COUNTER" -ge "$THREADS" ]; then
+        echo "Maximum number of pipelines are running ($THREADS), waiting for them to finish"
+        wait
+        unset "${COUNTER}"
+        echo "Running the next group of pipelines now"
+        COUNTER=0
+    fi
+
+done < "$REFERENCEFILE"
+
+wait
+
+#Remove any remaining fastq file from input unless holdinput is true
+if [ $HOLDINPUT == "false"  ] && [ -f ${RUNFOLDER}/${SAMPLE}_L001_R1_001.fastq.gz ]; then
+    rm ${RUNFOLDER}/${SAMPLE}_*
+fi
+
+# ###################################################################################### 
+# # Clear all variables, the script is run with source so if the same terminal is used
+# ###################################################################################### 
+unset THRESH
+unset QUAL
+unset LINE
+unset SAMPLE
+unset REFASTA
+unset SYNDNA
+
+echo "**********Pipeline Complete! All samples run**********"

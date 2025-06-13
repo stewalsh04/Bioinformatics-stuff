@@ -1,0 +1,97 @@
+---
+title: "Generalised mixed effect linear model"
+output: html_document
+date: "2024-07-16"
+---
+
+```{r}
+library(performance)
+library(glmmTMB)
+```
+
+
+```{r}
+data("Arabidopsis")
+```
+
+```{r}
+lme_arabidopsis <- lmer(total.fruits ~ nutrient + amd + (1|popu) + (1|gen), 
+                        data = Arabidopsis)
+```
+
+```{r}
+summary(lme_arabidopsis)
+```
+
+```{r}
+check_model(lme_arabidopsis, 
+            check = c("linearity", "homogeneity", "qq", "pp_check"))
+```
+
+```{r}
+glmm_arabidopsis <- glmer(total.fruits ~ nutrient + amd + (1|popu) + (1|gen), 
+                          data = Arabidopsis, family = "poisson")
+
+summary(glmm_arabidopsis)
+```
+
+```{r}
+check_model(glmm_arabidopsis, residual_type = "normal",
+            check = c("pp_check", "outliers", "reqq"))
+```
+
+```{r}
+check_model(glmm_arabidopsis, residual_type = "normal",
+            check = c("vif", "overdispersion"))
+```
+
+```{r}
+check_overdispersion(glmm_arabidopsis)
+```
+
+```{r}
+glmmnb_arabidopsis <- glmer.nb(total.fruits ~ nutrient + amd + (1|popu) + (1|gen), 
+                               data = Arabidopsis)
+
+summary(glmmnb_arabidopsis)
+```
+
+```{r}
+check_model(glmmnb_arabidopsis, residual_type = "normal",
+            check = c("pp_check", "outliers", "reqq"))
+```
+
+```{r}
+check_model(glmmnb_arabidopsis, residual_type = "normal",
+            check = c("vif", "overdispersion"))
+```
+
+```{r}
+check_overdispersion(glmmnb_arabidopsis)
+```
+
+```{r}
+ggplot(data = Arabidopsis, aes(x = total.fruits)) +
+  geom_histogram()
+```
+
+```{r}
+glmmzip_arabidopsis <- glmmTMB(total.fruits ~ nutrient + rack + status + amd + reg + 
+                          (1|popu) + (1|gen), data = Arabidopsis,
+                          family = "poisson", ziformula = ~1)
+
+summary(glmmzip_arabidopsis)
+```
+
+```{r}
+check_model(glmmzip_arabidopsis, residual_type = "normal", check = "pp_check")
+```
+
+```{r}
+glmmzinb_arabidopsis <- glmmTMB(total.fruits ~ nutrient + rack + status + amd + reg + 
+                          (1|popu) + (1|gen), data = Arabidopsis,
+                          family = "nbinom2", ziformula = ~1)
+
+check_model(glmmzinb_arabidopsis, residual_type = "normal", check = "pp_check")
+```
+

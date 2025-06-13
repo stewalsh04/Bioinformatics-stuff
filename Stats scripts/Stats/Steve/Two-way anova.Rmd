@@ -1,0 +1,163 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+exercise <- read_csv("data/CS4-exercise.csv")
+```
+
+```{r}
+# visualise the data, sex vs weight
+ggplot(exercise,
+       aes(x = sex, y = weight)) +
+  geom_boxplot()
+```
+
+```{r}
+# visualise the data, exercise vs weight
+ggplot(exercise,
+       aes(x = exercise, y = weight)) +
+  geom_boxplot()
+```
+
+```{r}
+ggplot(exercise,
+       aes(x = sex, y = weight, fill = exercise)) +
+  geom_boxplot() +
+  scale_fill_brewer(palette = "Dark2")
+```
+
+```{r}
+ggplot(exercise,
+       aes(x = sex, y = weight,
+           colour = exercise, group = exercise)) +
+  geom_jitter(width = 0.05) +
+  stat_summary(fun = mean, geom = "point", size = 5) +
+  stat_summary(fun = mean, geom = "line") +
+  scale_colour_brewer(palette = "Dark2")
+```
+
+```{r}
+ggplot(exercise,
+       aes(x = exercise, y = weight,
+           colour = sex, group = sex)) +
+  geom_jitter(width = 0.05) +
+  stat_summary(fun = mean, geom = "point", size = 3) +
+  stat_summary(fun = mean, geom = "line") +
+  scale_colour_brewer(palette = "Dark2")
+```
+
+```{r}
+lm_exercise <- lm(weight ~ sex + exercise + sex:exercise,
+                  data = exercise)
+```
+
+```{r}
+resid_panel(lm_exercise,
+            plots = c("resid", "qq", "ls", "cookd"),
+            smoother = TRUE)
+```
+
+```{r}
+anova(lm(weight ~ sex * exercise,
+         data = exercise))
+```
+
+
+
+```{r}
+auxin <- read_csv("data/CS4-auxin.csv")
+```
+
+```{r}
+# visualise the data, exercise vs weight
+ggplot(auxin,
+       aes(x = concentration, y = plant_height)) +
+  geom_boxplot()
+```
+
+```{r}
+# visualise the data, exercise vs weight
+ggplot(auxin,
+       aes(x = genotype, y = plant_height)) +
+  geom_boxplot()
+```
+
+
+```{r}
+ggplot(auxin,
+       aes(x = concentration, y = plant_height,
+           colour = genotype, group = genotype)) +
+  geom_jitter(width = 0.05) +
+  stat_summary(fun = mean, geom = "point", size = 5) +
+  stat_summary(fun = mean, geom = "line") +
+  scale_colour_brewer(palette = "Dark2")
+```
+
+```{r}
+auxin_lm <- lm(plant_height ~ concentration * genotype,
+              data = auxin)
+```
+
+```{r}
+resid_panel(auxin_lm,
+            plots = c("resid", "qq", "ls", "cookd"),
+            smoother = TRUE)
+```
+
+
+
+
+```{r}
+anova(auxin_lm)
+```
+
+```{r}
+# read in the data
+tulip <- read_csv("data/CS4-tulip.csv")
+```
+
+```{r}
+
+tulip <- tulip %>% 
+  mutate(water = as_factor(water),
+         shade = as_factor(shade))
+```
+
+
+```{r}
+# visualise the data, exercise vs weight
+ggplot(tulip,
+       aes(x = shade, y = blooms)) +
+  geom_boxplot()
+```
+
+
+
+```{r}
+ggplot(tulip,
+       aes(x = shade, y = blooms,
+           colour = water, group = water)) +
+  geom_jitter(width = 0.05) +
+  stat_summary(fun = mean, geom = "point", size = 5) +
+  stat_summary(fun = mean, geom = "line") +
+  scale_colour_brewer(palette = "Dark2")
+```
+```{r}
+tuliplm <- lm(blooms ~ water * shade,
+data = tulip)
+```
+
+```{r}
+resid_panel(tuliplm,
+            plots = c("resid", "qq", "ls", "cookd"),
+            smoother = TRUE)
+```
+
+
+
+```{r}
+anova(tuliplm)
+```
+

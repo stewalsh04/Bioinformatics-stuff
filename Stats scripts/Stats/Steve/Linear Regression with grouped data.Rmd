@@ -1,0 +1,88 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+# A collection of R packages designed for data science
+library(tidyverse)
+
+# Converts stats functions to a tidyverse-friendly format
+library(rstatix)
+
+# Creates diagnostic plots using ggplot2
+library(ggResidpanel)
+
+# Helper functions for tidying data
+library(broom)
+```
+
+```{r}
+treelight <- read_csv("data/CS4-treelight.csv")
+```
+
+```{r}
+ggplot(treelight,
+       aes(x= depth, y = light, colour = species)) +
+  geom_point() +
+    geom_smooth(method = "lm", se = FALSE) +
+  scale_color_brewer(palette = "Dark2") +
+    labs(x = "Depth (m)",
+       y = "Light intensity (lux)")
+```
+
+```{r}
+anova(lm(light ~ depth * species,
+         data = treelight)) 
+```
+
+```{r}
+# filter the Conifer data and fit a linear model
+treelight %>% 
+  filter(species == "Conifer") %>% 
+  lm(light ~ depth, data = .)
+```
+
+```{r}
+lm_additive <- lm(light ~ depth + species,
+   data = treelight)
+```
+
+```{r}
+lm_additive %>% augment()
+```
+
+```{r}
+# plot the regression lines by species
+lm_additive %>%
+  augment() %>% 
+  ggplot(aes(x = depth, y = .fitted, colour = species)) +
+  geom_line() +
+  scale_color_brewer(palette = "Dark2")
+```
+
+```{r}
+clover <- read_csv("data/CS4-clover.csv")
+```
+```{r}
+ggplot(clover,
+       aes(x= yarrow, y = log(yield), colour = farm)) +
+  geom_point() +
+    geom_smooth(method = "lm", se = FALSE) +
+  scale_color_brewer(palette = "Dark2") +
+    labs(x = "yarrow (stalks)",
+       y = "yield (kg)")
+```
+
+```{r}
+anova(lm(log(yield) ~ yarrow * farm,
+         data = clover)) 
+```
+
+```{r}
+resid_panel(lm(log(yield) ~ yarrow * farm,
+         data = clover),
+            plots = c("resid", "qq", "ls", "cookd"),
+            smoother = TRUE)
+```
+

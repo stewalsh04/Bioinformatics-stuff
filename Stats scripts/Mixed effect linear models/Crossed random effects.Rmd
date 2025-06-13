@@ -1,0 +1,39 @@
+---
+title: "Crossed random effects"
+output: html_document
+date: "2024-07-16"
+---
+
+```{r}
+library(tidyverse)
+library(lme4)
+library(broom)
+library(broom.mixed)
+library(patchwork)
+```
+
+#First a fully crossed example
+```{r}
+cognitive <- read_csv("/home/participant/Documents/stroop.csv")
+```
+
+```{r}
+lme_cognitive <- lmer(reaction_time ~ congruency + (1|item) +
+                        (1+congruency|subject), data=cognitive)
+
+summary(lme_cognitive)
+```
+
+#Now a partially crossed example
+```{r}
+abrasion <- read_csv("/home/participant/Documents/abrasion.csv")
+```
+
+```{r}
+lme_abrasion <- lmer(wear ~ material + (1|run) + (1|position), data = abrasion)
+
+summary(lme_abrasion)
+```
+
+
+

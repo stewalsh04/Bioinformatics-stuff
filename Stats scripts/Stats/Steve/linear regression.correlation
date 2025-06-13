@@ -1,0 +1,207 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+plot(cars)
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+
+```{r}
+# A collection of R packages designed for data science
+library(tidyverse)
+
+# Converts stats functions to a tidyverse-friendly format
+library(rstatix)
+
+# Creates diagnostic plots using ggplot2
+library(ggResidpanel)
+```
+
+
+```{r}
+USArrests <- read_csv("data/CS3-usarrests.csv")
+```
+
+```{r}
+# create scatterplot of the data
+ggplot(USArrests,
+       aes(x = assault, y = murder)) +
+  geom_point()
+```
+
+```{r}
+resid_panel(lm_1,
+            plots = c("resid", "qq", "ls", "cookd"),
+            smoother = TRUE)
+```
+
+```{r}
+# plot the data
+ggplot(USArrests,
+       aes(x = assault, y = murder)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE)
+```
+
+```{r}
+USAState <- read_csv("data/CS3-statedata.csv")
+```
+
+```{r}
+# create scatterplot of the data
+ggplot(USAState,
+       aes(x = life_exp, y = murder)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE)
+```
+
+```{r}
+lm2 <- lm( life_exp ~ murder,
+           data = USAState)
+```
+
+```{r}
+resid_panel(lm2,
+            plots = c("resid", "qq", "ls", "cookd"),
+            smoother = TRUE)
+```
+
+```{r}
+# create scatterplot of the data
+ggplot(USAState,
+       aes(x = frost, y = hs_grad)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE)
+```
+
+```{r}
+lm3 <- lm( hs_grad ~ frost,
+           data = USAState)
+```
+
+```{r}
+resid_panel(lm3,
+            plots = c("resid", "qq", "ls", "cookd"),
+            smoother = TRUE)
+```
+
+
+
+```{r}
+# create scatterplot of the data
+ggplot(USArrests,
+       aes(x = murder, y = robbery)) +
+  geom_point()
+```
+
+```{r}
+# assault vs urban_pop
+ggplot(USArrests,
+       aes(x = assault, y = urban_pop)) +
+    geom_point()
+```
+
+```{r}
+USArrests %>% 
+    select(-state) %>% 
+    pairs(lower.panel = NULL)
+```
+
+```{r}
+USArrests %>% 
+    select(-state) %>% 
+    cor()
+```
+
+```{r}
+USArrests %>% 
+  select(-state) %>% 
+  cor(method = "spearman") %>% 
+  heatmap(symm = TRUE, Rowv = NA)
+```
+
+```{r}
+USArrests %>% 
+    select(-state) %>% 
+    cor(method = "spearman")
+```
+
+
+```{r}
+USAState %>% 
+    select(-state) %>% 
+    pairs(lower.panel = NULL)
+```
+
+```{r}
+USAState %>% 
+  select(-state) %>% 
+  cor(method = "spearman") %>% 
+  heatmap(symm = TRUE, Rowv = NA)
+```
+```{r}
+USAState %>% 
+  select(-state) %>% 
+  cor() %>% 
+  heatmap(symm = TRUE, Rowv = NA)
+```
+
+```{r}
+USAstate_pear <- USAState %>% 
+    select(-state) %>% 
+    cor()
+```
+
+```{r}
+cor_pear <- USAState %>% 
+    select(-state) %>% 
+    cor(method = "pearson")
+
+cor_spear <- USAState %>% 
+    select(-state) %>% 
+    cor(method = "spearman")
+```
+
+```{r}
+cor_diff <- cor_pear - cor_spear
+```
+
+```{r}
+heatmap(abs(cor_diff), symm = TRUE, Rowv = NA)
+```
+
+
+
+
+```{r}
+# build a contingency table with as.table()
+# and create a dataframe with as.data.frame()
+USAstate_pear_cont <- as.data.frame(as.table(USAstate_pear))
+    
+# and have a look
+head(USAstate_pear_cont)
+```
+
+
+```{r}
+# first we remove the same-pair correlations
+USAstate_pear_cont <- USAstate_pear_cont %>% 
+  filter(Freq != 1)
+
+# most positively correlated pair
+USAstate_pear_cont %>% 
+  filter(Freq == max(Freq))
+```
+
+

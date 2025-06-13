@@ -1,0 +1,59 @@
+****Evonetix bash NGS pipeline ****
+
+*****To Install*****
+
+Unzip the file archive:
+tar -xf NGS-Pipeline-WSL.tar
+
+Nagigate to the unzipped directory:
+cd NGS-Pipeline-WSL
+
+Run the NGS Pipeline installer:
+. ./NGSPipeline-Install-WSL.sh (. ./ is correct not a typo)
+
+During installation, the installer will install conda, this will prompt you to accept the licence agreement, 
+simply type yes or press enter if prompted.
+
+*****To run*****
+
+Data should be placed into the experiment_data directory within in a sub directory with a name starting EVX, e.g EVX-Run10, each sample for that run
+should then be placed in its own sub folder also with a name starting EVX, e.g EVX-Run10-Sample1.
+
+Example directory structure below:
+
+					experiment_data
+
+		EVX-Run10					EVX-Run11
+
+EVX-Run10-Sample1 	EVX-Run10-Sample2	EVX-Run11-Sample1	EVX-Run11-Sample2
+
+The pipeline expects a forward and reverse fastq.gz file in each directory with the following suffix:
+
+Forward: *R1_001.fastq.gz
+Reverse: *R2_001.fastq.gz
+
+
+The pipeline is then run from terminal, the reference .fasta file should be placed in the repositories directory, use the following command:
+
+bash evxNGSpipelineV1-WSL.bash <Run-ID> <reference.fasta> <Synthesised sequence plus 4 base flanking regions>
+
+For example:
+bash evxNGSpipelineV1-WSL.bash EVX-Run10 R10ref.fasta TTCTGCTAGTCTAGACGTACACCT
+
+**N.B The Run-ID is the directory name in experiment_data where the data is located**
+
+
+
+**********To run in PhiX mode to QC the run*************
+
+When the sequencer is run, the PhiX genome is spiked in, this gives an opportunity to check the run quality against a
+known good sample. If aligment to the PhiX genome is good, the sequencer has likely run well. The PhiX reads are in
+the undertermined reads, to use PhiX mode create a directory in the run folder called 'Phix' and place both the R1
+and R2 undetermined fastq.gz files inside. Then to activate PhiX mode set the reference to 'phix' as shown below:
+
+bash evxNGSPipelineV1-WSL.bash <Run-ID> phix
+
+The undetermined read file should have the following file name structure:
+
+undetermined<runID>R1_001.fastq.gz
+undetermined<runID>R2_001.fastq.gz

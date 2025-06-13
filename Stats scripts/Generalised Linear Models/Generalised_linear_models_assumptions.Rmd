@@ -1,0 +1,29 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(ggResidpanel)
+```
+
+```{r}
+resid_panel(glm_dia, plots = "cookd")
+```
+#Another dataset
+```{r}
+islands <- read_csv("/home/participant/R/data/island.csv")
+```
+
+#Make a glm
+```{r}
+glm_isl <- glm(species ~ area,
+               data = islands, family = "poisson")
+```
+
+#Again check deviance against the residuals
+```{r}
+glm_isl$deviance/glm_isl$df.residual
+pchisq(glm_isl$deviance, glm_isl$df.residual)
+```
+

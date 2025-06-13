@@ -1,0 +1,64 @@
+multi-site    sample
+Unnamed: 1      name
+Unnamed: 2    synDNA
+Unnamed: 3       PCR
+Name: 0, dtype: object
+multi-site                                      pooled_ds-50000
+Unnamed: 1                                           Sequence-1
+Unnamed: 2    AGATAATTCAAATTAATCGGAAACATACAGCTCATGACAGGTCCTC...
+Unnamed: 3                                                  NaN
+Name: 1, dtype: objectmulti-site     22
+Unnamed: 1    NaN
+Unnamed: 2    NaN
+Unnamed: 3    NaN
+Name: 0, dtype: object
+multi-site    sample
+Unnamed: 1      name
+Unnamed: 2    synDNA
+Unnamed: 3       PCR
+Name: 1, dtype: objectmulti-site     22
+Unnamed: 1    NaN
+Unnamed: 2    NaN
+Unnamed: 3    NaN
+Name: 0, dtype: object
+multi-site    sample
+Unnamed: 1      name
+Unnamed: 2    synDNA
+Unnamed: 3       PCR
+Name: 1, dtype: object0    multi-site
+1           NaN
+2           NaN
+3           NaN
+Name: 0, dtype: object
+0     22
+1    NaN
+2    NaN
+3    NaN
+Name: 1, dtype: object0    multi-site
+1           NaN
+2           NaN
+3           NaN
+Name: 0, dtype: object
+0     22
+1    NaN
+2    NaN
+3    NaN
+Name: 1, dtype: object0    multi-site
+1           NaN
+2           NaN
+3           NaN
+Name: 0, dtype: object
+0     22
+1    NaN
+2    NaN
+3    NaN
+Name: 1, dtype: object0    multi-site
+1           NaN
+2           NaN
+3           NaN
+Name: 0, dtype: object
+0     22
+1    NaN
+2    NaN
+3    NaN
+Name: 1, dtype: object

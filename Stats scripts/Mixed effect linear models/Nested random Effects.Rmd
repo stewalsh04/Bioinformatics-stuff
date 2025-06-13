@@ -1,0 +1,95 @@
+---
+title: "Nested Random Effects"
+output: html_document
+date: "2024-07-16"
+---
+
+```{r}
+library(tidyverse)
+library(lme4)
+library(broom)
+library(broom.mixed)
+library(patchwork)
+```
+
+
+```{r}
+health <- read_csv("/home/participant/Documents/health.csv")
+```
+
+#Create a mixed effect linea model with intercepts only (1|doctor) + (1|hospital)
+```{r}
+lme_health_intercepts <- lmer(outcome ~ treatment + (1|doctor) + (1|hospital),
+                   data = health)
+
+summary(lme_health_intercepts)
+```
+
+#Now add random intercepts and slopes for both, this is because the doctor gives both treatments (Look at table to see this)
+```{r}
+lme_health_slopes <- lmer(outcome ~ treatment + (1 + treatment|doctor) + 
+                      (1 + treatment|hospital), data = health)
+
+summary(lme_health_slopes)
+```
+#New data set where doctors only give one type of treatment
+```{r}
+health2 <- read_csv("/home/participant/Documents/health2.csv")
+```
+
+#In this case we fit only random intercepts for doctor, but both intercepts and slopes for the hospital as each hospital gives both treatments
+```{r}
+lme_health2_slopes <- lmer(outcome ~ treatment + (1|doctor) + 
+                      (1 + treatment|hospital), data = health2)
+
+summary(lme_health2_slopes)
+```
+#The data above was implicitly encoded (The best way to do it), with a separate ID for each patient
+#The pastes dataset is explicitly encoded, we have 30 casks, but no unique cask id.
+```{r}
+data("Pastes")
+
+head(Pastes)
+```
+
+#Just fitting as before confuses R, as R thinks we only have 3 casks; A, B and C.
+```{r}
+lme_paste <- lmer(strength ~ 1 + (1|batch) + (1|cask), data = Pastes)
+
+summary(lme_paste)
+```
+
+#To get around the problem we can add a new column that gives each cask a unique ID
+```{r}
+Pastes <- Pastes %>% mutate(unique_cask = batch:cask)
+
+head(Pastes)
+```
+
+#We can then use the unique ID to get a random intercept
+```{r}
+lme_paste_implicit <- lmer(strength ~ 1 + (1|batch) + (1|unique_cask),
+                  data = Pastes)
+
+summary(lme_paste_implicit)
+```
+
+#If we don't want to create a new column, we can just analyse the data explicitly, to do this we tell R how the casks relate to the batch (1|batch:cask)
+```{r}
+lme_paste_explicit <- lmer(strength ~ 1 + (1|batch) + (1|batch:cask), data = Pastes)
+
+summary(lme_paste_explicit)
+```
+
+#This is the same as above but with different sytax, we use (1|batch/cask) here instead
+```{r}
+lme_paste_shorthand <- lmer(strength ~ 1 + (1|batch/cask), data = Pastes)
+
+summary(lme_paste_shorthand)
+```
+
+```{r}
+cake <- data("cake")
+```
+
+

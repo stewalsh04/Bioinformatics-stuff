@@ -1,0 +1,88 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+ladybird <- read_csv("data/CS5-ladybird.csv")
+
+head(ladybird)
+```
+
+```{r}
+ggplot(ladybird,
+       aes(x = male, y = eggs)) +
+    geom_boxplot() +
+    geom_jitter(width = 0.05)
+```
+
+```{r}
+# visualise the data
+ggplot(ladybird,
+       aes(x = weight, y = eggs,
+           colour = male)) +
+    geom_point() +
+    scale_color_brewer(palette = "Dark2")
+```
+
+```{r}
+# define the full model
+lm_full <- lm(eggs ~ weight * male,
+              data = ladybird)
+```
+
+```{r}
+# define the additive model
+lm_add <- lm(eggs ~ weight + male,
+             data = ladybird)
+```
+
+```{r}
+AIC(lm_full)
+AIC(lm_add)
+```
+
+```{r}
+# define the model just the males
+lm_male <- lm(eggs ~ male,
+              data = ladybird)
+
+# extract the AIC
+AIC(lm_male)
+```
+
+```{r}
+# define the model just female weight
+lm_weight <- lm(eggs ~ weight,
+                data = ladybird)
+
+# extract the AIC
+AIC(lm_weight)
+```
+#Male increases it whereas female weight reduces it so model is reduced to eggs ~ weight
+
+#Carry out all the above to reduce the model with step function
+```{r}
+# perform backwards stepwise elimination
+step(lm_full)
+```
+
+```{r}
+lm_pollution <- lm(pm2_5 ~ location + rain_mm + wind_m_s + location:rain_mm + rain_mm:wind_m_s + location:wind_m_s,
+                   data = pm2_5)
+```
+
+```{r}
+step(lm_pollution)
+```
+
+
+
+
+
+
+
+
+
+
+

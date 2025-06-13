@@ -1,0 +1,71 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+install.packages("lmtest")
+library(lmtest)
+```
+
+```{r}
+diabetes <-read_csv("/home/participant/R/data/diabetes.csv")
+```
+
+#Get the glm for the diabetes data again
+```{r}
+glm_dia <- glm(test_result ~ glucose * diastolic,
+                  family = "binomial",
+                  data = diabetes)
+```
+
+#Look at the model
+```{r}
+summary(glm_dia)
+```
+#Get the nul glm for the diabetes data
+```{r}
+glm_null <- glm(test_result ~ 1, 
+                family = binomial, 
+                data = diabetes)
+```
+
+#Test between the glm for the doabetes data and the null
+```{r}
+lrtest(glm_dia, glm_null)
+```
+
+#Investigate if the interaction between glucose and diastolic gives an impproved model, first get a model
+```{r}
+glm_dia_add <- glm(test_result ~ glucose + diastolic,
+                  family = "binomial",
+                  data = diabetes)
+```
+
+#Compare against the original model, it does not improve things
+```{r}
+lrtest(glm_dia, glm_dia_add)
+```
+
+#ANOVA can be used to compare all factors in the model, glucose is the best
+```{r}
+anova(glm_dia, test="Chisq")
+```
+
+#Use a goodness of fit chi squared test to test the model
+#Model deviance and model degrees of freedom (df) are needed
+```{r}
+1 - pchisq(glm_dia$deviance, glm_dia$df.residual)
+```
+
+#AIC values can tell us about overall model quality
+#They are calculated automatically and included in the model summary
+```{r}
+glm_dia$aic
+```
+
+#The R step function can also be used to check the reliability of our model
+```{r}
+step(glm_dia, test = "LRT")
+```
+

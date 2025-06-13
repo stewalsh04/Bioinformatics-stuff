@@ -1,0 +1,227 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+# install pwr package if needed
+install.packages("pwr")
+
+# load the pwr package
+library(pwr)
+```
+
+#Use to get the effect values needed for experiments from Cohen
+```{r}
+cohen.ES(test = "t", size = "medium")
+```
+
+#Carry out power test for two sample t test
+```{r}
+pwr.t.test(n = 30, sig.level = 0.05, power = 0.8,
+           type = "two.sample", alternative = "two.sided")
+```
+#Use fish data again and have a look
+```{r}
+# read in the data
+fishlength <- read_csv("data/CS1-twosample.csv")
+
+# visualise the data
+fishlength %>% 
+  ggplot(aes(x = river, y = length)) +
+  geom_boxplot()
+```
+#Perform t test
+```{r}
+# perform t-test
+t.test(length ~ river,
+       data = fishlength,
+       var.equal = TRUE)
+```
+
+Carry out cohens_d function on fish data to get effect size
+```{r}
+cohens_d(length ~ river,
+         var.equal = TRUE,
+         data = fishlength)
+```
+
+Carry out power analysis on fish data using effect size
+```{r}
+pwr.t.test(d = 0.94, power = 0.8, sig.level = 0.05,
+           type = "two.sample", alternative = "two.sided")
+```
+#We only need 19 fish!!
+
+#Read in and look at lobster data again
+```{r}
+# read in the data
+lobsters <- read_csv("data/CS2-lobsters.csv")
+# visualise the data
+ggplot(lobsters,
+       aes(x = diet, y = weight)) +
+  geom_boxplot()
+```
+
+##Carry out linear model and use for ANOVA of fish data
+```{r}
+# define the linear model
+lm_lobster <- lm(weight ~ diet,
+                 data = lobsters)
+
+# perform ANOVA on model
+anova(lm_lobster)
+```
+
+#Use Cohen's f2 to get effect size from R2 value from linear model
+```{r}
+# get the effect size for ANOVA
+R2 <- summary(lm_lobster) %>%
+    glance() %>% 
+    pull(r.squared)
+
+# calculate Cohen's f2
+R2 / (1 - R2)
+```
+
+##Carry out power calculation. U is the numerator degress of freedom (one less than number of parameters, i.e 3 fish -1 = 2)
+```{r}
+pwr.f2.test(u = 2, f2 = 0.219,
+            sig.level = 0.05, power = 0.8)
+```
+
+#Number of observations needed = U(numerator df) + V(denominator df) + 1
+
+```{r}
+# read in the data
+fish <- read_csv("data/CS1-onesample.csv")
+# visualise the data
+ggplot(fish,
+       aes(x = river, y = length)) +
+  geom_boxplot()
+```
+
+```{r}
+t.test(fish$length,
+       mu = 20, alternative = "two.sided")
+```
+
+```{r}
+cohens_d(length ~ 1,
+         mu = 20,
+         data = fish)
+```
+
+```{r}
+pwr.t.test(d = -0.659, power = 0.9, sig.level = 0.01,
+           type = "one.sample")
+```
+
+```{r}
+# read in the data
+cortisol <- read_csv("data/CS1-twopaired.csv")
+# visualise the data
+```
+
+```{4}
+ggplot(fish,
+       aes(x = river, y = length)) +
+  geom_boxplot()
+```
+
+```{r}
+cortisol_diff <- cortisol %>%
+  pivot_wider(id_cols = patient_id,
+              names_from = time,
+              values_from = cortisol) %>% 
+  mutate(cortisol_change = evening - morning)
+
+cortisol_diff
+```
+
+
+```{r}
+t.test(cortisol_diff$morning, cortisol_diff$evening,
+       alternative = "two.sided",
+       paired = TRUE)
+```
+
+```{r}
+cohens_d(cortisol ~ time,
+       paired = TRUE,
+         data = cortisol)
+```
+
+```{r}
+pwr.t.test(d = -1.159019, power = 0.8, sig.level = 0.01,
+           type = "paired")
+```
+
+```{r}
+# read in the data
+shell <- read_csv("data/CS6-shelllength.csv")
+# visualise the data
+```
+
+```{r}
+ggplot(shell,
+       aes(x = location, y = length)) +
+  geom_boxplot()
+```
+```{r}
+# define the linear model
+lm_shell <- lm(length ~ location,
+                 data = shell)
+
+# perform ANOVA on model
+anova(lm_shell)
+```
+
+```{r}
+# get the effect size for ANOVA
+R2 <- summary(lm_shell) %>%
+    glance() %>% 
+    pull(r.squared)
+
+# calculate Cohen's f2
+effect_size_shell <- R2 / (1 - R2)
+```
+
+
+```{r}
+pwr.f2.test(u = 4, f2 = effect_size_shell,
+            sig.level = 0.05, power = 0.8)
+```
+
+```{r}
+epilepsy <- read_csv("data/CS6-epilepsy1.csv")
+```
+
+```{r}
+ggplot(epilepsy,
+       aes(x = age, y = seizure)) +
+    geom_point()
+```
+
+```{r}
+epilepsylm <- lm(seizure ~ age,
+                   data = epilepsy)
+```
+
+```{r}
+R2_epilepsy <- epilepsylm %>%
+    glance() %>% 
+    pull(r.squared)
+```
+
+```{r}
+co_f2_epilepsy <- R2_epilepsy / (1 - R2_epilepsy)
+```
+
+
+
+```{r}
+pwr.f2.test(u = 1, f2 = co_f2_epilepsy,
+            sig.level = 0.05, power = 0.9)
+```
+
