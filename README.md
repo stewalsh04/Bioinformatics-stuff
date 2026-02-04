@@ -12,10 +12,10 @@ A complete, end-to-end analysis pipeline for short DNA sequencing reads (≤150 
 - Deterministic, automated execution (no manual steps)
 - Designed for use in HPC and batch-processing environments
 
-### Pipeline location:
+**Pipeline location:**
 `short_DNA_analysis_pipeline/`
 
-### Start here:
+**Start here**
 `short_DNA_analysis_pipeline/README.md`
 
 ## Other utilities
