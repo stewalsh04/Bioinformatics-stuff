@@ -1,9 +1,23 @@
-## What is this repository for? ##
+# Bioinformatics Tools
 
-This repository contains a collection of NGS bioinformatic scripts, a folder containing R scirpts for statistical analysis and a fully functional bash pipeline to analyse short DNA sequence reads of up to 150bp.
+A collection of bioinformatics utilities and pipelines developed for reproducible, automated analysis workflows.
 
-I use this folder to store and share things that I have found useful within my bioinformatics and statistics work.
+## Featured project: Short DNA read analysis pipeline
 
-- The folder containing the R scripts has a dependency file and its own readme, simply install the packages within R studio.
+A complete, end-to-end analysis pipeline for short DNA sequencing reads (≤150 bp), designed for unattended execution and reproducibility.
 
-- The short DNA sequence pipeline has its own detailed Readme along with it's own installer script that should handle dependancies within conda.
+**Key characteristics**
+- One-command installation via shell script
+- Explicit dependency management
+- Deterministic, automated execution (no manual steps)
+- Designed for use in HPC and batch-processing environments
+
+### Pipeline location:
+`short_DNA_analysis_pipeline/`
+
+### Start here: see 
+short_DNA_analysis_pipeline/README.md
+
+## Other utilities
+- **Statistical analysis scripts (R):** reusable analysis helpers with documented dependencies
+- **Standalone tools:** small Python utilities for sequence and alignment processing
