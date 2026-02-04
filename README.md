@@ -1,0 +1,1 @@
+This repository contains a collection of NGS bioinformatic scripts, a folder contain R scirpts for statistical analysis and a fully functional bash pipeline to analyse short DNA sequence reads of up to 150bp.
