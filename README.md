@@ -4,6 +4,6 @@ This repository contains a collection of NGS bioinformatic scripts, a folder con
 
 I use this folder to store and share things that I have found useful within my bioinformatics and statistics work.
 
-- The folder containing the R scripts has a dependancy file and its own readme, simply install the packages within R studio.
+- The folder containing the R scripts has a dependency file and its own readme, simply install the packages within R studio.
 
 - The short DNA sequence pipeline has its own detailed Readme along with it's own installer script that should handle dependancies within conda.
