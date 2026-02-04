@@ -15,8 +15,8 @@ A complete, end-to-end analysis pipeline for short DNA sequencing reads (≤150 
 ### Pipeline location:
 `short_DNA_analysis_pipeline/`
 
-### Start here: see 
-'short_DNA_analysis_pipeline/README.md'
+### Start here:
+`short_DNA_analysis_pipeline/README.md`
 
 ## Other utilities
 - **Statistical analysis scripts (R):** reusable analysis helpers with documented dependencies
